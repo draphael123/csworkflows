@@ -23,10 +23,21 @@ export async function fetchGoogleDocViaExport(docId: string): Promise<string> {
     // Format 2: Alternative with exportFormat parameter
     // Format 3: Using the sharing link format
     
+    // Try multiple export URL formats for Google Docs
+    // IMPORTANT: For export URLs to work, the document must be:
+    // Option 1: "Published to Web" (File > Share > Publish to web)
+    // Option 2: Shared publicly AND accessible via export URL
     const exportUrls = [
+      // Standard export format (works if published to web)
       `https://docs.google.com/document/d/${docId}/export?format=txt`,
-      `https://docs.google.com/document/d/${docId}/export?format=txt&id=${docId}`,
+      // Alternative with explicit format
       `https://docs.google.com/document/d/${docId}/export?format=plaintext`,
+      // Using the published web version
+      `https://docs.google.com/document/d/${docId}/pub?embedded=true&output=txt`,
+      // Alternative export format
+      `https://docs.google.com/document/export?format=txt&id=${docId}`,
+      // Try with different parameters
+      `https://docs.google.com/document/d/${docId}/export?format=txt&usp=sharing`,
     ];
     
     let lastError: Error | null = null;
