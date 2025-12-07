@@ -18,17 +18,30 @@ export default function Header() {
       
       const data = await response.json();
       
+      if (!response.ok) {
+        // Handle error response
+        const errorMessage = data.error || data.message || 'Failed to sync document';
+        alert(`Sync Error: ${errorMessage}\n\nDetails: ${data.details || 'Unknown error'}\n\nPlease ensure:\n1. Google Doc is publicly shared (Anyone with link can view)\n2. GOOGLE_DOC_ID is set in Vercel environment variables`);
+        setSyncStatus('error');
+        setIsSyncing(false);
+        return;
+      }
+      
       if (data.success) {
         setSyncStatus('success');
+        alert(`Success! Synced ${data.sectionsCount || 0} sections from the document.`);
         // Refresh the page after 1 second to show synced content
         setTimeout(() => {
           window.location.reload();
         }, 1000);
       } else {
+        const errorMessage = data.message || 'Sync failed';
+        alert(`Sync Error: ${errorMessage}`);
         setSyncStatus('error');
       }
     } catch (error) {
       console.error('Sync error:', error);
+      alert(`Sync Error: ${error instanceof Error ? error.message : 'Network error. Please check your connection and try again.'}`);
       setSyncStatus('error');
     } finally {
       setIsSyncing(false);

@@ -37,8 +37,16 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error('Sync error:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
-      { error: 'Failed to sync document', details: error instanceof Error ? error.message : 'Unknown error' },
+      { 
+        success: false,
+        error: 'Failed to sync document', 
+        message: errorMessage,
+        details: errorMessage.includes('publicly accessible') 
+          ? 'The Google Doc must be shared publicly. Go to Share → Change to "Anyone with the link" → Viewer'
+          : errorMessage
+      },
       { status: 500 }
     );
   }
