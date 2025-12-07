@@ -22,26 +22,42 @@ export async function fetchGoogleDocViaExport(docId: string): Promise<string> {
     // Format: https://docs.google.com/document/d/{DOC_ID}/export?format=txt
     const exportUrl = `https://docs.google.com/document/d/${docId}/export?format=txt`;
     
+    console.log('Attempting to fetch Google Doc from:', exportUrl);
+    
     const response = await fetch(exportUrl, {
       headers: {
         'User-Agent': 'Mozilla/5.0 (compatible; KnowledgeHub/1.0)',
+        'Accept': 'text/plain',
       },
       // Add cache control to ensure fresh content
       cache: 'no-store',
     });
 
+    console.log('Response status:', response.status, response.statusText);
+    console.log('Response headers:', Object.fromEntries(response.headers.entries()));
+
     if (!response.ok) {
+      const errorText = await response.text().catch(() => 'Could not read error response');
+      console.error('Error response body:', errorText);
+      
       if (response.status === 403) {
         throw new Error('Document is not publicly accessible. Please share it publicly (Anyone with the link can view).');
       }
-      throw new Error(`Failed to fetch document: ${response.statusText} (${response.status})`);
+      if (response.status === 404) {
+        throw new Error(`Document not found. Please verify the GOOGLE_DOC_ID is correct: ${docId}`);
+      }
+      throw new Error(`Failed to fetch document: ${response.statusText} (${response.status}). Response: ${errorText.substring(0, 200)}`);
     }
 
     const text = await response.text();
+    console.log('Successfully fetched document, length:', text.length);
     return text;
   } catch (error) {
     console.error('Error fetching Google Doc via export:', error);
-    throw error;
+    if (error instanceof Error) {
+      throw error;
+    }
+    throw new Error(`Unknown error: ${String(error)}`);
   }
 }
 

@@ -12,17 +12,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    console.log('Starting sync for doc ID:', docId);
+    
     // Fetch document content
     const sections = await fetchGoogleDocContent(docId);
+    
+    console.log('Fetched sections count:', sections.length);
     
     // If fetchGoogleDocContent returns empty (not yet implemented),
     // we'll use a placeholder for now
     if (sections.length === 0) {
-      // TODO: Implement actual Google Docs API integration
-      // For now, return a message indicating sync is needed
+      console.warn('No sections found after parsing');
       return NextResponse.json({
         success: false,
-        message: 'Google Docs integration needs to be configured. Please see documentation.',
+        message: 'Document was fetched but no sections were found. The document might be empty or the parsing logic needs adjustment.',
         sectionsCount: 0,
       });
     }
