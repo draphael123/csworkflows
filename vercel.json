@@ -1,0 +1,10 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/sync-docs",
+      "schedule": "0 2 * * *"
+    }
+  ]
+}
+
+
