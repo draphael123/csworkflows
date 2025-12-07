@@ -18,40 +18,72 @@ export interface DocumentSection {
  */
 export async function fetchGoogleDocViaExport(docId: string): Promise<string> {
   try {
-    // Use the export URL format for Google Docs
-    // Format: https://docs.google.com/document/d/{DOC_ID}/export?format=txt
-    const exportUrl = `https://docs.google.com/document/d/${docId}/export?format=txt`;
+    // Try multiple export URL formats for Google Docs
+    // Format 1: Standard export URL
+    // Format 2: Alternative with exportFormat parameter
+    // Format 3: Using the sharing link format
     
-    console.log('Attempting to fetch Google Doc from:', exportUrl);
+    const exportUrls = [
+      `https://docs.google.com/document/d/${docId}/export?format=txt`,
+      `https://docs.google.com/document/d/${docId}/export?format=txt&id=${docId}`,
+      `https://docs.google.com/document/d/${docId}/export?format=plaintext`,
+    ];
     
-    const response = await fetch(exportUrl, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (compatible; KnowledgeHub/1.0)',
-        'Accept': 'text/plain',
-      },
-      // Add cache control to ensure fresh content
-      cache: 'no-store',
-    });
+    let lastError: Error | null = null;
+    
+    // Try each URL format
+    for (const exportUrl of exportUrls) {
+      try {
+        console.log('Attempting to fetch Google Doc from:', exportUrl);
+        
+        const response = await fetch(exportUrl, {
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+            'Accept': 'text/plain, text/*, */*',
+            'Accept-Language': 'en-US,en;q=0.9',
+          },
+          // Add cache control to ensure fresh content
+          cache: 'no-store',
+          redirect: 'follow',
+        });
 
-    console.log('Response status:', response.status, response.statusText);
-    console.log('Response headers:', Object.fromEntries(response.headers.entries()));
+        console.log('Response status:', response.status, response.statusText);
 
-    if (!response.ok) {
-      const errorText = await response.text().catch(() => 'Could not read error response');
-      console.error('Error response body:', errorText);
-      
-      if (response.status === 403) {
-        throw new Error('Document is not publicly accessible. Please share it publicly (Anyone with the link can view).');
+        if (!response.ok) {
+          const errorText = await response.text().catch(() => 'Could not read error response');
+          console.error('Error response body:', errorText);
+          
+          if (response.status === 403) {
+            lastError = new Error('Document is not publicly accessible. Please share it publicly (Anyone with the link can view).');
+            continue; // Try next URL
+          }
+          if (response.status === 404) {
+            lastError = new Error(`Document not found. Please verify the GOOGLE_DOC_ID is correct: ${docId}`);
+            continue; // Try next URL
+          }
+          lastError = new Error(`Failed to fetch document: ${response.statusText} (${response.status}). Response: ${errorText.substring(0, 200)}`);
+          continue; // Try next URL
+        }
+
+        const text = await response.text();
+        console.log('Successfully fetched document, length:', text.length);
+        return text; // Success!
+      } catch (error) {
+        console.error(`Error with URL ${exportUrl}:`, error);
+        if (error instanceof Error) {
+          lastError = error;
+        } else {
+          lastError = new Error(`Unknown error: ${String(error)}`);
+        }
+        // Continue to next URL
       }
-      if (response.status === 404) {
-        throw new Error(`Document not found. Please verify the GOOGLE_DOC_ID is correct: ${docId}`);
-      }
-      throw new Error(`Failed to fetch document: ${response.statusText} (${response.status}). Response: ${errorText.substring(0, 200)}`);
     }
-
-    const text = await response.text();
-    console.log('Successfully fetched document, length:', text.length);
-    return text;
+    
+    // If we get here, all URLs failed
+    if (lastError) {
+      throw lastError;
+    }
+    throw new Error('All export URL formats failed. Please check document sharing settings.');
   } catch (error) {
     console.error('Error fetching Google Doc via export:', error);
     if (error instanceof Error) {
