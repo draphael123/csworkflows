@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { queryClaude } from '@/lib/claude';
-import { getCachedSections } from '@/lib/google-docs';
+import { getCachedSections, setCachedSections, fetchGoogleDocContent } from '@/lib/google-docs';
 
 export async function POST(request: NextRequest) {
   try {
@@ -15,12 +15,30 @@ export async function POST(request: NextRequest) {
     }
 
     // Get cached document sections
-    const sections = getCachedSections();
+    let sections = getCachedSections();
+
+    // If no cached sections, try to fetch them on-demand
+    // This ensures the chat works even if sync hasn't run yet
+    if (sections.length === 0) {
+      const docId = process.env.GOOGLE_DOC_ID;
+      if (docId) {
+        try {
+          console.log('No cached sections, fetching on-demand...');
+          sections = await fetchGoogleDocContent(docId);
+          if (sections.length > 0) {
+            // Cache for this function execution
+            setCachedSections(sections);
+          }
+        } catch (error) {
+          console.error('Failed to fetch doc on-demand:', error);
+        }
+      }
+    }
 
     if (sections.length === 0) {
       return NextResponse.json(
         {
-          answer: 'The knowledge base is currently being synced. Please try again in a few moments.',
+          answer: 'The knowledge base is currently being synced. Please click "Sync Docs" button to sync the document first.',
           citations: [],
         },
         { status: 200 }

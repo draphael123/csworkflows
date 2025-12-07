@@ -61,22 +61,6 @@ export function parseDocumentSections(content: string): DocumentSection[] {
   return sections;
 }
 
-/**
- * Stores document sections (in-memory for now, can be replaced with DB)
- */
-let cachedSections: DocumentSection[] = [];
-let lastSyncTime: Date | null = null;
-
-export function getCachedSections(): DocumentSection[] {
-  return cachedSections;
-}
-
-export function setCachedSections(sections: DocumentSection[]): void {
-  cachedSections = sections;
-  lastSyncTime = new Date();
-}
-
-export function getLastSyncTime(): Date | null {
-  return lastSyncTime;
-}
+// Re-export storage functions for backward compatibility
+export { getCachedSections, setCachedSections, getLastSyncTime } from './storage';
 

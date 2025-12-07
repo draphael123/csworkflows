@@ -8,15 +8,22 @@ export default function Header() {
   const [syncStatus, setSyncStatus] = useState<'idle' | 'success' | 'error'>('idle');
 
   const handleSync = async () => {
+    console.log('Sync button clicked');
     setIsSyncing(true);
     setSyncStatus('idle');
     
     try {
+      console.log('Fetching /api/sync...');
       const response = await fetch('/api/sync', {
         method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
       });
       
+      console.log('Response status:', response.status);
       const data = await response.json();
+      console.log('Response data:', data);
       
       if (!response.ok) {
         // Handle error response
